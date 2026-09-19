@@ -1,0 +1,12 @@
+{
+  "name": "claude-tamagotchi",
+  "description": "A pixel-art pet that lives in Claude Code and reacts to how you code",
+  "owner": { "name": "Keso Chikhladze" },
+  "plugins": [
+    {
+      "name": "pet",
+      "source": "./plugins/pet",
+      "description": "Feed it, play with it, level it up — it cheers on passing tests and panics at errors"
+    }
+  ]
+}

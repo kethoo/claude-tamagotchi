@@ -1,0 +1,15 @@
+{
+  "name": "pet",
+  "displayName": "Claude Tamagotchi",
+  "version": "1.0.0",
+  "description": "A pixel-art coding companion that reacts to your tests, commits, pushes and errors",
+  "author": {
+    "name": "Keso Chikhladze"
+  },
+  "keywords": [
+    "tamagotchi",
+    "pet",
+    "fun",
+    "gamification"
+  ]
+}
