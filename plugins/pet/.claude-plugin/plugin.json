@@ -1,7 +1,7 @@
 {
   "name": "pet",
   "displayName": "Claude Tamagotchi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A pixel-art coding companion that reacts to your tests, commits, pushes and errors",
   "author": {
     "name": "Keso Chikhladze"

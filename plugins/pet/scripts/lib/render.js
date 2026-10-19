@@ -7,7 +7,9 @@ const { ITEMS, EVENTS, QUESTS, xpNeeded, MIN } = require('./game');
 // ---------- color ----------
 const TRUECOLOR = /truecolor|24bit/i.test(process.env.COLORTERM || '') ||
   /iTerm|WezTerm|vscode|ghostty|kitty|Hyper/i.test(process.env.TERM_PROGRAM || '') ||
-  /kitty|ghostty|alacritty|wezterm/i.test(process.env.TERM || '');
+  /kitty|ghostty|alacritty|wezterm/i.test(process.env.TERM || '') ||
+  Boolean(process.env.WT_SESSION) || // Windows Terminal
+  (process.platform === 'win32' && !process.env.TERM); // modern Windows consoles all do truecolor
 const NO_COLOR = 'NO_COLOR' in process.env;
 
 const C = {

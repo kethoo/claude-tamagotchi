@@ -183,12 +183,13 @@ const commands = {
 
   setup() {
     writeRoot();
-    const shim = installShim();
+    const { launcher, shim, bin } = installShim();
     const lines = [`✔ Installed the claude-pet command at ${shim}`];
     const link = linkIntoPath(shim);
     if (link) lines.push(`✔ Linked it as ${link}`);
+    else if (process.platform === 'win32') lines.push(`  To run it by name, add this folder to your PATH:  ${bin}`);
     else lines.push(`  To run it by name, add this to your shell profile:  alias claude-pet='${shim}'`);
-    if (!flags.has('--no-statusline')) lines.push(configureStatusline(shim));
+    if (!flags.has('--no-statusline')) lines.push(configureStatusline(launcher));
     lines.push('',
       'Next: open a second terminal pane next to Claude Code and run',
       '    claude-pet watch',
@@ -236,24 +237,40 @@ function writeRoot() {
   } catch {}
 }
 
+// A small node launcher (works on every OS) plus a convenience wrapper:
+// a shell script on macOS/Linux, a .cmd file on Windows. Both always run the
+// newest installed plugin version, found through ~/.claude-pet/root.
 function installShim() {
   const bin = path.join(store.HOME, 'bin');
   fs.mkdirSync(bin, { recursive: true });
-  const shim = path.join(bin, 'claude-pet');
-  fs.writeFileSync(shim, [
-    '#!/bin/sh',
-    '# Launcher for the Claude Tamagotchi plugin. Points at the newest installed version.',
-    `PET_HOME="\${CLAUDE_PET_HOME:-$HOME/.claude-pet}"`,
-    'ROOT="$(cat "$PET_HOME/root" 2>/dev/null)"',
-    `[ -f "$ROOT/scripts/pet.js" ] || ROOT="${ROOT}"`,
-    'exec node "$ROOT/scripts/pet.js" "$@"',
+  const launcher = path.join(bin, 'claude-pet.js');
+  fs.writeFileSync(launcher, [
+    '#!/usr/bin/env node',
+    '// Launcher for the Claude Tamagotchi plugin. Points at the newest installed version.',
+    "const fs = require('fs'), path = require('path'), os = require('os');",
+    "const home = process.env.CLAUDE_PET_HOME || path.join(os.homedir(), '.claude-pet');",
+    "let root = '';",
+    "try { root = fs.readFileSync(path.join(home, 'root'), 'utf8').trim(); } catch {}",
+    `if (!fs.existsSync(path.join(root, 'scripts', 'pet.js'))) root = ${JSON.stringify(ROOT)};`,
+    "const entry = path.join(root, 'scripts', 'pet.js');",
+    'process.argv[1] = entry;',
+    'require(entry);',
     '',
   ].join('\n'));
+  const fwd = launcher.split(path.sep).join('/');
+  if (process.platform === 'win32') {
+    const cmdFile = path.join(bin, 'claude-pet.cmd');
+    fs.writeFileSync(cmdFile, `@echo off\r\nnode "${launcher}" %*\r\n`);
+    return { launcher: fwd, shim: cmdFile, bin };
+  }
+  const shim = path.join(bin, 'claude-pet');
+  fs.writeFileSync(shim, `#!/bin/sh\nexec node "${launcher}" "$@"\n`);
   fs.chmodSync(shim, 0o755);
-  return shim;
+  return { launcher: fwd, shim, bin };
 }
 
 function linkIntoPath(shim) {
+  if (process.platform === 'win32') return null;
   const dirs = (process.env.PATH || '').split(path.delimiter);
   const local = path.join(os.homedir(), '.local', 'bin');
   if (!dirs.includes(local) || !fs.existsSync(local)) return null;
@@ -265,7 +282,8 @@ function linkIntoPath(shim) {
   } catch { return null; }
 }
 
-function configureStatusline(shim) {
+function configureStatusline(launcher) {
+  const command = `node "${launcher}" statusline`;
   const file = path.join(os.homedir(), '.claude', 'settings.json');
   let settings = {};
   try { settings = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) {
@@ -274,11 +292,11 @@ function configureStatusline(shim) {
   if (settings.statusLine) {
     const already = JSON.stringify(settings.statusLine).includes('claude-pet');
     return already ? '✔ Statusline already shows your pet'
-      : `  You already have a statusline, so I left it alone. To use the pet's instead, set\n  "statusLine": {"type": "command", "command": "${shim} statusline"} in ~/.claude/settings.json`;
+      : `  You already have a statusline, so I left it alone. To use the pet's instead, set\n  "statusLine": {"type": "command", "command": ${JSON.stringify(command)}} in ~/.claude/settings.json`;
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   if (fs.existsSync(file)) fs.copyFileSync(file, file + '.bak');
-  settings.statusLine = { type: 'command', command: `${shim} statusline`, padding: 0 };
+  settings.statusLine = { type: 'command', command, padding: 0 };
   fs.writeFileSync(file, JSON.stringify(settings, null, 2) + '\n');
   return '✔ Added the pet to your Claude Code statusline (backup: ~/.claude/settings.json.bak)';
 }

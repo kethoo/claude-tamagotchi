@@ -84,4 +84,4 @@ plugins/pet/
 
 To work on it locally: `claude --plugin-dir ./plugins/pet`. Set `CLAUDE_PET_HOME` to keep a separate test pet. `claude-pet reset --yes` hatches a new one.
 
-Colors use truecolor when your terminal advertises it and fall back to 256 colors otherwise; `NO_COLOR` is respected. On Windows, run `node <plugin>/scripts/pet.js watch` directly, since the `claude-pet` launcher is a shell script.
+Colors use truecolor in modern terminals (including Windows Terminal and VS Code) and fall back to 256 colors otherwise; `NO_COLOR` is respected. On Windows, `/pet:setup` creates `claude-pet.cmd` and prints the folder to add to your PATH. In VS Code, set `"terminal.integrated.lineHeight": 1` so the pixel rows touch.
